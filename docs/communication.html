@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Linko SSH — investigation</title><style>*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;background:#101720;color:#e6edf5;font:17px/1.65 system-ui,sans-serif}main{max-width:960px;margin:auto;padding:24px 18px 80px}h1{font-size:clamp(27px,5vw,40px);line-height:1.2}h3{font-size:20px;line-height:1.35;margin-top:32px}p{margin:16px 0}a{color:#80caff;overflow-wrap:anywhere}code{font-size:.88em;background:#0b1119;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}.intro{background:#1b3041;padding:18px;border-radius:12px;margin:20px 0}.intro p{margin:4px 0}.intro strong{font-size:20px}.jump{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 26px}.jump a{padding:8px 12px;border:1px solid #394e65;border-radius:8px;text-decoration:none;min-height:44px}details{margin:14px 0;border:1px solid #344353;border-radius:10px;scroll-margin-top:18px}summary{cursor:pointer;font-size:20px;font-weight:700;line-height:1.4;padding:18px;min-height:58px;background:#1a2430;border-radius:10px}summary:focus-visible,a:focus-visible{outline:3px solid #80caff;outline-offset:3px}.section{padding:2px 18px 20px}li{margin:9px 0}.table{margin:20px 0}table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.5}th,td{padding:12px 9px;border:1px solid #344353;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#223142}footer{margin-top:30px;color:#b8c5d5;font-size:14px}@media(max-width:600px){main{padding:18px 10px 60px}.section{padding:0 12px 14px}summary{font-size:18px;padding:16px 12px}table{font-size:13px}th,td{padding:8px 5px}code{word-break:break-word}}</style></head><body><main><h1>Linko SSH — investigation and discussion</h1><aside class="intro"><p><strong>134.2 MB measured upstream APK</strong></p><p>About 47.5 MB estimated for ARM64 with all features; about 27.6 MB after removing media and PDF.</p><p>Investigation only. App code is unchanged. Nothing uploaded.</p></aside><p>Tap a section to open or close it. The complete Markdown note is saved as <code>COMMUNICATION.md</code> in this project.</p><nav class="jump" aria-label="Report sections"><a href="#section-1">Recommendation</a><a href="#section-2">Features</a><a href="#section-3">Measured size</a><a href="#section-4">Keep</a><a href="#section-5">Cut</a><a href="#section-6">Tailscale / tmux</a><a href="#section-7">Rename</a><a href="#section-8">Build later</a></nav>
+<p>Updated: 4 October 2026. This file is our persistent communication note.</p>
+<details id="section-1" open><summary>1. My recommendation</summary><div class="section">
+<p>Build Linko SSH around <strong>saved connections → terminal tabs → persistent tmux sessions</strong>, preserving the existing keyboard and touch controls. Keep all currently implemented SSH authentication and connection routes, including direct connections and jump hosts. Use the separate Tailscale Android app for networking.</p>
+<p>The biggest wins are <strong>an APK for each CPU architecture</strong>, <strong>removing the built-in video/audio player</strong>, and <strong>removing the built-in PDF reader</strong>. We can simplify the rest of the interface without sacrificing SSH.</p>
+<p>Your size estimate was right: I downloaded and inspected the upstream v2.10.2 release APK. It is <strong>134.20 MB</strong>, or <strong>127.98 MiB</strong>. It contains three sets of Android native binaries, for three CPU architectures. These are all Android binaries; they are not iPhone or Linux copies.</p>
+<p>A phone-specific ARM64 APK with all current features would contain roughly <strong>47.5 MB</strong> of the current APK&#x27;s entries. Removing media and PDF components brings that arithmetic estimate to about <strong>27.6 MB</strong>, before any savings from simplifying Dart application code. These are estimates from the existing binary, not newly built or tested APKs.</p>
+<p><strong>Current status:</strong> investigation only. No app code, branding, dependencies, Git remotes, or release scripts have been changed. Nothing has been committed, pushed, or uploaded. Only this report, its browser version, measured data, and local Dev Panel preview configuration were added.</p>
+</div></details>
+<details id="section-2"><summary>2. What the software contains</summary><div class="section">
+<p>The copied application is <strong>KAMMEL SSH</strong>, implemented in Flutter/Dart. The checkout is version <code>2.10.2+74</code>, commit <code>9e7334c</code>. It configures Android and Linux; there are no iOS, macOS, or Windows app runners in this checkout. Some dependencies support those platforms, but that does not mean their native binaries are included in the Android APK.</p>
+<div class="table"><table><thead><tr><th>Feature area</th><th>What is included</th><th>Fit for your needs</th></tr></thead><tbody>
+<tr><td>SSH connections</td><td>Saved profiles, passwords, pasted private keys, generated device key, custom ports, jump hosts, SSH config import, connection testing</td><td>Keep</td></tr>
+<tr><td>Sessions</td><td>Multiple terminal tabs, rename/close/reconnect, optional remote tmux attachment</td><td>Keep; improve tmux selection</td></tr>
+<tr><td>Terminal input</td><td>Configurable quick keys, Ctrl/Esc/Tab/arrows, touch pad, gestures, selection, clipboard, search, command history, physical keyboard and Android IME handling</td><td>Keep</td></tr>
+<tr><td>Background operation</td><td>Android foreground service, persistent notification, optional wake lock</td><td>Keep</td></tr>
+<tr><td>Connection protection</td><td>Host key confirmation and SHA256 pinning, secure credential storage, optional biometric/device lock</td><td>Keep</td></tr>
+<tr><td>SSH tunnels</td><td>Local <code>-L</code>, dynamic SOCKS <code>-D</code>, remote <code>-R</code>, tunnel controls and timeouts</td><td>Preserve initially</td></tr>
+<tr><td>File tools</td><td>SFTP browser, upload/download, search, copy/move/delete/create, bookmarks and folder synchronization</td><td>Optional</td></tr>
+<tr><td>Editing and viewing</td><td>Syntax-highlighted code editor, Markdown preview, raster/SVG images, PDF reader, video/audio players, external document opening</td><td>Remove media/PDF first; other tools optional</td></tr>
+<tr><td>Server console</td><td>CPU/RAM/disk/services, Docker containers/images/volumes/networks/Compose, PostgreSQL/MySQL controls</td><td>Remove from your minimal version</td></tr>
+<tr><td>Git tools</td><td>Changes, diffs, project tree, commit actions and commands sent to an agent</td><td>Remove from your minimal version</td></tr>
+<tr><td>AI conveniences</td><td>Agent detection, status dashboard, alerts, launch buttons, prompt snippets, prompt composer, speech dictation, image/file attachments</td><td>Optional; some may still help your workflow</td></tr>
+<tr><td>General app tools</td><td>Themes, fonts, Spanish/English/Chinese UI, backup/restore, onboarding, release notes, GitHub APK updater, desktop window/pane management</td><td>Keep useful settings and backups; simplify the rest</td></tr>
+</tbody></table></div>
+<p>The app provides interfaces to Docker, databases, Git and AI agents on your remote machine. It does <strong>not</strong> bundle Docker Engine, database servers, or an AI model. There is also no bundled Tailscale engine in the app.</p>
+<p>Some old comments mention a local Linux distro, Alpine and proot. I found no <code>assets/distro</code> directory, no distro service, and no corresponding entry in the current asset manifest. That is not the explanation for this APK&#x27;s size.</p>
+</div></details>
+<details id="section-3"><summary>3. What actually takes space</summary><div class="section">
+<p>These are measured ZIP entry sizes inside the <a href="https://github.com/Jhongdlp/Kammel_ssh/releases/tag/v2.10.2" target="_blank" rel="noopener noreferrer">published APK</a>, summed across ARM64, ARM32 and x86_64. MB means decimal megabytes. For the native libraries in this APK, the entries are stored without ZIP compression.</p>
+<div class="table"><table><thead><tr><th>Component</th><th>Measured APK contribution</th><th>What we can do</th></tr></thead><tbody>
+<tr><td>Compiled Dart application, <code>libapp.so</code></td><td>41.52 MB</td><td>Includes reachable app and package code; a build size report is needed to allocate it to features</td></tr>
+<tr><td>Media engine, <code>libmpv.so</code></td><td>39.93 MB</td><td>Remove the built-in audio/video players and media dependencies</td></tr>
+<tr><td>Flutter engine, <code>libflutter.so</code></td><td>32.89 MB</td><td>Keep Flutter; ship only the appropriate architecture per APK</td></tr>
+<tr><td>PDF engine, <code>libpdfium.so</code></td><td>13.41 MB</td><td>Remove built-in PDF viewing and its dependency</td></tr>
+<tr><td>Other Flutter assets</td><td>2.33 MB</td><td>Includes a 1.98 MB PDF WebAssembly asset</td></tr>
+<tr><td>Other native libraries</td><td>1.37 MB</td><td>Includes 1.04 MB of media helper libraries; some disappear with media playback</td></tr>
+<tr><td>Fonts</td><td>0.95 MB</td><td>Small compared with native engines</td></tr>
+<tr><td>Android bytecode</td><td>0.78 MB</td><td>Small; reduce unused plugins where practical</td></tr>
+<tr><td>Other APK entries</td><td>0.70 MB</td><td>Android resources and packaging entries</td></tr>
+<tr><td>Bundled license asset</td><td>0.11 MB</td><td>Retain required notices</td></tr>
+</tbody></table></div>
+<p>Entry sizes total approximately 133.99 MB. ZIP headers, alignment and signing account for the remaining approximately 0.21 MB. Raw data, byte counts and the APK SHA256 are in <code>docs/apk-size-analysis.json</code>.</p>
+<p>Media playback plus its helper libraries account for about <strong>40.96 MB</strong>. PDF native libraries plus the PDF WebAssembly asset account for about <strong>15.39 MB</strong>. Together, these identifiable entries account for about <strong>56.36 MB</strong>, or <strong>42%</strong> of the current universal APK. Removing their dependencies can also reduce Dart code, but that extra saving has not been measured.</p>
+<p>The PDF package explicitly documents removing its WebAssembly assets from non-web release builds. If you decide to keep PDF viewing, removing the unused web module is still a roughly 1.98 MB opportunity in this baseline. <a href="https://pub.dev/packages/pdfrx/versions/2.2.24" target="_blank" rel="noopener noreferrer">PDF package instructions</a>.</p>
+<h3>Why separate Android APKs help</h3>
+<p>The current release repeats native code for three architectures:</p>
+<div class="table"><table><thead><tr><th>Architecture</th><th>Native entries</th><th>Shared non-native entries</th><th>Estimated existing-content APK size</th></tr></thead><tbody>
+<tr><td>ARM64, common on current phones</td><td>42.62 MB</td><td>4.86 MB</td><td>About 47.5 MB plus packaging</td></tr>
+<tr><td>ARM32, for compatible older phones</td><td>38.69 MB</td><td>4.86 MB</td><td>About 43.6 MB plus packaging</td></tr>
+<tr><td>x86_64, used by this emulator</td><td>47.80 MB</td><td>4.86 MB</td><td>About 52.7 MB plus packaging</td></tr>
+</tbody></table></div>
+<p>Flutter can generate these as separate APKs. Each is installable on devices supporting that architecture. We should confirm your phone&#x27;s architecture before choosing its download. Keep x86_64 as a separate test artifact for the emulator. <a href="https://docs.flutter.dev/deployment/android" target="_blank" rel="noopener noreferrer">Flutter Android build documentation</a>.</p>
+<p>The savings from architecture splitting and deleting libraries overlap: <strong>do not add the 56.36 MB universal saving to the ARM64 saving</strong>. Applying both to the current entry inventory yields roughly 27.6 MB for ARM64, before rebuilding.</p>
+<p>APK download size, Android&#x27;s installed app size, and later cache/download storage are different measurements. This report measures the APK file. Images/files downloaded through SFTP and cached fonts can add storage later.</p>
+</div></details>
+<details id="section-4"><summary>4. What I would preserve</summary><div class="section">
+<ul>
+<li>Ordinary SSH over Tailscale, LAN, public IPs or another VPN; custom host, username and port.</li>
+<li>Password login, private-key login and the generated Ed25519 device key.</li>
+<li>Existing encrypted-key parsing. The current implementation reuses the profile password as the key passphrase; it does not offer a separate passphrase field.</li>
+<li>Jump hosts and multi-hop routes, including per-hop host key checks.</li>
+<li>Existing supported SSH config import and SSH command parsing.</li>
+<li>Host key verification, secure storage, profile backup/restore and optional app lock.</li>
+<li>Terminal tabs, reconnect, tmux, keyboard customization, clipboard, touch gestures, search and font sizing.</li>
+<li>Android background service and its notification, even if the AI alert/dashboard features are removed.</li>
+<li>Existing tunnel features initially, because you asked to preserve connection methods.</li>
+</ul>
+<p>Keep the patched <code>third_party/xterm</code> terminal: it contains the Android keyboard and image-paste improvements. Keep patched <code>third_party/dartssh2</code>: it fixes tunnel flow control and exposes raw host keys for SHA256 pinning.</p>
+<p>“All login methods” here means all methods currently wired into the app. It is not a complete OpenSSH replacement: keyboard-interactive/MFA has no app callback, SSH agent forwarding is not implemented, and config import does not implement <code>ProxyCommand</code>, <code>Match</code> or <code>Include</code>. Import records <code>IdentityFile</code> information but does not copy that private key from your computer. The short SSH-command parser also skips <code>-i</code> and <code>-J</code>; jump hosts are supported through the profile form and supported config import. These are current limitations, not proposed removals.</p>
+</div></details>
+<details id="section-5"><summary>5. What I would cut, in order</summary><div class="section">
+<h3>First: large libraries that SSH does not need</h3>
+<p><strong>Remove video/audio playback:</strong> delete those viewers and playback widgets, remove <code>MediaKit.ensureInitialized()</code> and imports, and remove <code>media_kit</code>, <code>media_kit_video</code> and <code>media_kit_libs_video</code> dependencies. This saves the biggest optional native payload. If file tools remain, media files can be downloaded and opened in another Android app.</p>
+<p><strong>Remove built-in PDF viewing:</strong> remove the PDF viewer and <code>pdfrx</code>; its transitive PDF engine packages and WebAssembly assets should then disappear. PDFs can likewise open externally if downloads remain.</p>
+<p>Hiding a menu item is insufficient. We must remove the code paths, dependencies and packaged assets, then verify the produced APK.</p>
+<h3>Second: simplify the product</h3>
+<p><strong>Remove Docker/database/server panels and Git panels.</strong> Their main benefit is a simpler app and less maintenance. These are mostly Dart interfaces and remote commands, so I cannot promise a particular MB saving. You can still run <code>docker</code>, <code>git</code>, <code>psql</code>, and other commands in the remote terminal.</p>
+<p><strong>Remove the graphical code editor and document viewers</strong> if you use terminal editors or coding agents. This removes <code>re_editor</code>, <code>re_highlight</code>, Markdown rendering and, where no remaining feature needs it, SVG viewing.</p>
+<p><strong>Choose whether to keep a small SFTP tool.</strong> Removing the full explorer simplifies the interface, but removing SFTP support itself is not a major size win because it lives in the same Dart SSH package. A small upload/download tool may be useful. Terminal image paste and attachments currently depend on SFTP, so they must be preserved or deliberately removed with the file tools.</p>
+<p><strong>Treat AI features separately from terminal usability.</strong> Agent dashboards, launchers, detection and alerts are optional. They are not bundled AI models and are not the main size problem. Keep prompt snippets or an easy multiline paste/composer if you use coding agents. Dropping custom speech dictation is an option; Android keyboard dictation can remain. Keep the keyboard-related terminal patches regardless.</p>
+<h3>Third: low-value size work</h3>
+<p>Dropping Linux files and desktop window controls reduces maintenance, but Linux native binaries are already absent from the Android APK. Removing nonexistent iPhone support saves nothing.</p>
+<p>The four Cascadia font files occupy 2.11 MB in the checkout, but about <strong>0.81 MB</strong> in the APK. All font entries together are about 0.95 MB. Agent image assets occupy about 180 KiB in the checkout. Languages and theme choices are also small compared with the media/PDF engines. I would preserve readability and keyboard comfort before optimizing these.</p>
+<p>The Git history, README files, tests, screenshots in <code>public/</code>, build SDK and emulator are development files, not automatically shipped in the APK. Deleting them is not a useful APK size strategy.</p>
+</div></details>
+<details id="section-6"><summary>6. Tailscale and tmux</summary><div class="section">
+<p><strong>Recommended setup:</strong> install and connect the separate Tailscale app on the phone; save the server&#x27;s Tailscale IP or MagicDNS name in Linko SSH. Linko SSH uses its normal SSH client through that network. This keeps ordinary password/key login available when you use a different network route.</p>
+<p>Tailscale networking and the <strong>Tailscale SSH server feature</strong> are distinct choices. Tailscale SSH authenticates using tailnet identity and SSH&#x27;s <code>none</code> authentication method. The vendored Dart SSH library tries that method, so there is a plausible compatibility path, but I have not tested the app against your server or its browser-check policy. <a href="https://tailscale.com/docs/features/tailscale-ssh" target="_blank" rel="noopener noreferrer">Tailscale SSH documentation</a>.</p>
+<p>Tmux runs on the <strong>remote machine</strong>, so it does not need a tmux executable bundled inside the Android APK. The current app optionally runs <code>tmux new-session -A</code>, attaches if a session exists, and falls back to a normal shell if tmux is absent.</p>
+<p>There is one important usability gap: the automatic tmux session name is derived from the saved connection profile name, currently <code>kammel-&lt;profile-name&gt;</code>. Multiple terminal tabs using the same profile therefore target the same tmux session. It is not a dedicated browser for selecting several remote tmux sessions.</p>
+<p>For your workflow, I recommend an explicit tmux session name per terminal tab and a small list/create/attach screen. That would let you choose, for example, <code>work</code>, <code>maintenance</code>, and <code>agent</code>, rather than requiring duplicate server profiles. It is a proposed improvement; nothing has been implemented.</p>
+</div></details>
+<details id="section-7"><summary>7. Renaming and the later fork</summary><div class="section">
+<p>Once we move from brainstorming to implementation, change the product name to <strong>Linko SSH</strong> in the Android launcher, app titles, onboarding, About screen, notification text, translated strings and documentation. Also replace the camel logo and launcher/notification artwork.</p>
+<p>The rename needs more care than a global text replacement:</p>
+<ul>
+<li>Give the fork its own Android application ID and signing key so it installs independently and can receive consistent future updates.</li>
+<li>Update corresponding Kotlin packages and Flutter/native channel names together if those identifiers change.</li>
+<li>Disable or redirect the updater: it currently checks <code>Jhongdlp/Kammel_ssh</code>. With several APK architectures, replace its “first APK in the release” selection with device-architecture selection.</li>
+<li>Update release tooling and links after your repository exists. The existing <code>scripts/release.sh</code> commits, tags, pushes and publishes; we did not run it.</li>
+<li>Handle old tmux names and backup markers deliberately. Simply replacing <code>kammel-</code> or <code>kammel_backup</code> could prevent attachment to an existing remote session or import of an existing backup.</li>
+<li>Retain upstream and third-party copyright/license notices, including the notice explicitly required by the copied license. Preserve attribution in notices while rebranding the product interface.</li>
+</ul>
+<p>The Android build currently uses compile SDK 36, target SDK 28 and legacy shared-storage behavior. A future fork should review that separately, especially if file downloads remain. It is not a major explanation for the APK size.</p>
+</div></details>
+<details id="section-8"><summary>8. Building and testing later</summary><div class="section">
+<p>The Android SDK, Java and a running x86_64 emulator are available here. Flutter is not on PATH, and the README&#x27;s claimed <code>sdk/flutter</code> directory is absent from this checkout. We will need a compatible Flutter SDK before rebuilding; the project&#x27;s CI pins Flutter 3.44.4 and the Dart constraint is <code>^3.12.2</code>.</p>
+<p>An emulator is useful for running and testing the app, but it is <strong>not required to produce an APK</strong>. Building needs Flutter, Java and the Android SDK. This investigation did not install or launch the upstream app or produce a new APK.</p>
+<p>A sensible implementation sequence is:</p>
+<ol>
+<li>Establish a clean release-build baseline and size report.</li>
+<li>Build separate architecture APKs, preserving all features, to measure that saving alone.</li>
+<li>Remove media and PDF dependencies; measure again.</li>
+<li>Simplify server/Git/editor/agent/file tools according to the agreed scope.</li>
+<li>Implement Linko SSH branding and deliberate tmux session selection.</li>
+<li>Verify password/key/device-key login, direct and jump-host routes, tunnels, host key checks, keyboard/paste behavior, reconnect and background operation in tmux. Test Tailscale on a real phone too; an emulator is not proof of phone VPN behavior.</li>
+<li>Produce a signed phone APK and a separate emulator APK. Upload only after you request it and provide the new repository.</li>
+</ol>
+<p>For measurement, Flutter supports release size analysis and comparing builds in DevTools. Debug APK sizes should not be used as the production baseline. <a href="https://docs.flutter.dev/perf/app-size" target="_blank" rel="noopener noreferrer">Flutter size analysis documentation</a>.</p>
+<p><strong>Proposed scope for discussion:</strong> Android, all existing SSH connection/authentication routes, terminal tabs, multiple named remote tmux sessions, full keyboard/touch/clipboard usability, background connection support, host key checks and saved credentials. Cut media/PDF, Docker/database/server controls, Git panels and the code editor. Keep a small SFTP/attachment tool and AI convenience controls only if they earn their place in your daily workflow.</p>
+</div></details><footer>Saved report · 4 October 2026 · <a href="apk-size-analysis.json">Raw APK measurements</a></footer></main></body></html>

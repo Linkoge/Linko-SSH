@@ -1,0 +1,232 @@
+{
+  "apk_bytes": 134199831,
+  "entry_compressed_bytes": 133982229,
+  "categories": {
+    "Other APK entries": [
+      697433,
+      833656,
+      389
+    ],
+    "Android bytecode": [
+      780742,
+      1719700,
+      1
+    ],
+    "Native / Dart app": [
+      41519468,
+      41519468,
+      3
+    ],
+    "Native / Other native": [
+      1368504,
+      1368504,
+      9
+    ],
+    "Native / Flutter engine": [
+      32891412,
+      32891412,
+      3
+    ],
+    "Native / Media (libmpv)": [
+      39932548,
+      39932548,
+      3
+    ],
+    "Native / PDF (pdfium)": [
+      13405344,
+      13405344,
+      3
+    ],
+    "Flutter assets / Other": [
+      2325744,
+      4699567,
+      21
+    ],
+    "Flutter assets / Licenses": [
+      114991,
+      116038,
+      1
+    ],
+    "Flutter assets / Fonts": [
+      946043,
+      2397024,
+      6
+    ]
+  },
+  "architectures": {
+    "arm64-v8a": [
+      42619976,
+      42619976
+    ],
+    "armeabi-v7a": [
+      38692740,
+      38692740
+    ],
+    "x86_64": [
+      47804560,
+      47804560
+    ]
+  },
+  "native_libraries": {
+    "libapp.so": [
+      41519468,
+      41519468
+    ],
+    "libdartjni.so": [
+      309716,
+      309716
+    ],
+    "libdatastore_shared_counter.so": [
+      17752,
+      17752
+    ],
+    "libflutter.so": [
+      32891412,
+      32891412
+    ],
+    "libmediakitandroidhelper.so": [
+      1041036,
+      1041036
+    ],
+    "libmpv.so": [
+      39932548,
+      39932548
+    ],
+    "libpdfium.so": [
+      13405344,
+      13405344
+    ]
+  },
+  "largest_entries": [
+    {
+      "path": "lib/x86_64/libmpv.so",
+      "compressed": 15816336,
+      "uncompressed": 15816336
+    },
+    {
+      "path": "lib/armeabi-v7a/libapp.so",
+      "compressed": 14844492,
+      "uncompressed": 14844492
+    },
+    {
+      "path": "lib/x86_64/libapp.so",
+      "compressed": 13501328,
+      "uncompressed": 13501328
+    },
+    {
+      "path": "lib/arm64-v8a/libapp.so",
+      "compressed": 13173648,
+      "uncompressed": 13173648
+    },
+    {
+      "path": "lib/x86_64/libflutter.so",
+      "compressed": 12857960,
+      "uncompressed": 12857960
+    },
+    {
+      "path": "lib/arm64-v8a/libmpv.so",
+      "compressed": 12369680,
+      "uncompressed": 12369680
+    },
+    {
+      "path": "lib/armeabi-v7a/libmpv.so",
+      "compressed": 11746532,
+      "uncompressed": 11746532
+    },
+    {
+      "path": "lib/arm64-v8a/libflutter.so",
+      "compressed": 11580816,
+      "uncompressed": 11580816
+    },
+    {
+      "path": "lib/armeabi-v7a/libflutter.so",
+      "compressed": 8452636,
+      "uncompressed": 8452636
+    },
+    {
+      "path": "lib/x86_64/libpdfium.so",
+      "compressed": 5146720,
+      "uncompressed": 5146720
+    },
+    {
+      "path": "lib/arm64-v8a/libpdfium.so",
+      "compressed": 4977432,
+      "uncompressed": 4977432
+    },
+    {
+      "path": "lib/armeabi-v7a/libpdfium.so",
+      "compressed": 3281192,
+      "uncompressed": 3281192
+    },
+    {
+      "path": "assets/flutter_assets/packages/pdfrx/assets/pdfium.wasm",
+      "compressed": 1977532,
+      "uncompressed": 3982871
+    },
+    {
+      "path": "classes.dex",
+      "compressed": 780742,
+      "uncompressed": 1719700
+    },
+    {
+      "path": "lib/arm64-v8a/libmediakitandroidhelper.so",
+      "compressed": 386696,
+      "uncompressed": 386696
+    },
+    {
+      "path": "lib/x86_64/libmediakitandroidhelper.so",
+      "compressed": 367528,
+      "uncompressed": 367528
+    },
+    {
+      "path": "lib/armeabi-v7a/libmediakitandroidhelper.so",
+      "compressed": 286812,
+      "uncompressed": 286812
+    },
+    {
+      "path": "resources.arsc",
+      "compressed": 272920,
+      "uncompressed": 272920
+    },
+    {
+      "path": "assets/flutter_assets/assets/fonts/CascadiaCode-Bold.ttf",
+      "compressed": 235779,
+      "uncompressed": 604696
+    },
+    {
+      "path": "assets/flutter_assets/assets/fonts/CascadiaCode-Regular.ttf",
+      "compressed": 233576,
+      "uncompressed": 598060
+    },
+    {
+      "path": "assets/flutter_assets/assets/fonts/CascadiaCode-BoldItalic.ttf",
+      "compressed": 174523,
+      "uncompressed": 458632
+    },
+    {
+      "path": "assets/flutter_assets/assets/fonts/CascadiaCode-Italic.ttf",
+      "compressed": 172202,
+      "uncompressed": 453184
+    },
+    {
+      "path": "lib/arm64-v8a/libdartjni.so",
+      "compressed": 124592,
+      "uncompressed": 124592
+    },
+    {
+      "path": "assets/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf",
+      "compressed": 115944,
+      "uncompressed": 257628
+    },
+    {
+      "path": "assets/flutter_assets/NOTICES.Z",
+      "compressed": 114991,
+      "uncompressed": 116038
+    }
+  ],
+  "release": "v2.10.2",
+  "source_url": "https://github.com/Jhongdlp/Kammel_ssh/releases/download/v2.10.2/app-release.apk",
+  "sha256": "7dbffda55beb2ff7a29058c90e7d00123b12dc5e2a6c1a21457162ed5a82f1be",
+  "review_date": "2026-10-04",
+  "method": "ZIP entry compressed and uncompressed sizes; includes three Android ABIs; decimal MB = 1000000 bytes; does not measure installed app storage."
+}

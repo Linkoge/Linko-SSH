@@ -1,0 +1,213 @@
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
+import '../theme/app_theme.dart';
+import 'agent_waiting_badge.dart';
+import 'swiss.dart';
+import '../l10n/l10n.dart';
+
+class MenuDrawer extends StatelessWidget {
+  const MenuDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = Provider.of<AppState>(context);
+
+    return Drawer(
+      backgroundColor: AppColors.ink,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drawer Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/images/linko_logo.png',
+                    width: 24,
+                    color: AppColors.accent,
+                    filterQuality: FilterQuality.medium,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    tr('Linko SSH - MENÚ'),
+                    style: AppText.label(12, color: AppColors.bone, spacing: 1.5),
+                  ),
+                ],
+              ),
+            ),
+            Hairline(),
+            
+            // Section 1: Server console (monitor + Docker). Always enabled —
+            // the console picks its own server and opens a dedicated SSH
+            // client, like a cloud-provider console.
+            ListTile(
+              leading: Icon(Icons.dns_outlined, color: AppColors.accent),
+              title: Text(
+                tr('SERVIDOR'),
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Monitor, Docker y auditoría por SSH'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(4); // Switch to Server console
+              },
+            ),
+            Hairline(),
+
+            // Section 1b: Tunnels. Live state of every port forward, which the
+            // profile form (where they're configured) can't show.
+            ListTile(
+              leading: Icon(Icons.swap_horiz, color: AppColors.accent),
+              title: Text(
+                tr('TÚNELES'),
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Port forwarding activo y su tráfico'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(9); // Switch to Tunnels Tab
+              },
+            ),
+            Hairline(),
+
+            // Section 1c: Agents. Which session stopped to ask you something —
+            // the one screen that answers it without opening every tab.
+            ListTile(
+              leading: Icon(Icons.smart_toy_outlined, color: AppColors.accent),
+              title: Text(
+                tr('AGENTES'),
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Qué está haciendo cada sesión ahora mismo'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              // Only the badge listens to the monitor, so a session changing
+              // state doesn't rebuild the drawer around it.
+              trailing: const AgentWaitingBadge(),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(10); // Switch to Agents Tab
+              },
+            ),
+            Hairline(),
+
+            // Section 2: General settings
+            ListTile(
+              leading: Icon(Icons.tune, color: AppColors.accent),
+              title: Text(
+                tr('AJUSTES GENERALES'), 
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Seguridad, explorador y llaves'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(5); // Switch to Settings Tab
+              },
+            ),
+            Hairline(),
+
+            // Section 3: Notifications. Its own screen rather than a panel
+            // inside general settings: agent alerts have enough knobs
+            // (per-kind intensity, schedule, detector sensitivity, per-session
+            // muting, diagnostics) to warrant one.
+            ListTile(
+              leading: Icon(Icons.notifications_active_outlined,
+                  color: AppColors.accent),
+              title: Text(
+                tr('NOTIFICACIONES'),
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Avisos de agente, intensidad y diagnóstico'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(8); // Switch to Notifications Tab
+              },
+            ),
+            Hairline(),
+
+            // Section 4: Personalization
+            ListTile(
+              leading: Icon(Icons.palette_outlined, color: AppColors.accent),
+              title: Text(
+                tr('PERSONALIZACIÓN'), 
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Temas, colores y fuentes'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(6); // Switch to Personalization Tab
+              },
+            ),
+            Hairline(),
+
+            // Section 4: About
+            ListTile(
+              leading: Icon(Icons.info_outline, color: AppColors.accent),
+              title: Text(
+                tr('ACERCA DE LA APP'), 
+                style: AppText.mono(11, color: AppColors.bone),
+              ),
+              subtitle: Text(
+                tr('Información, versión y actualizaciones'),
+                style: AppText.body(9, color: AppColors.muted),
+              ),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer
+                state.setActiveTabIndex(7); // Switch to About Tab
+              },
+            ),
+            Hairline(),
+
+            const Spacer(),
+            
+            // Drawer Footer / Info
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final info = snapshot.data;
+                      final version = info != null ? '${info.version}+${info.buildNumber}' : '…';
+                      return Text(
+                        'Linko SSH v$version',
+                        style: AppText.mono(8, color: AppColors.muted),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    tr('Desarrollado para entornos móviles y Linux'),
+                    style: AppText.body(8, color: AppColors.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

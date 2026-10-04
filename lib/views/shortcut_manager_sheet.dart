@@ -1,0 +1,723 @@
+import 'package:flutter/material.dart';
+import '../providers/app_state.dart';
+import '../theme/app_theme.dart';
+import '../widgets/adaptive_sheet.dart';
+import '../models/terminal_shortcut.dart';
+import '../models/terminal_key_layer.dart';
+import '../widgets/swiss.dart';
+import '../l10n/l10n.dart';
+
+class ShortcutManagerSheet {
+  static void show(
+    BuildContext context,
+    AppState state, {
+    bool promptsOnly = false,
+  }) {
+    showAdaptiveSheet(
+      context,
+      backgroundColor: AppColors.panel,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setSheetState) {
+            final entries = state.customShortcuts
+                .where((s) => !promptsOnly || !s.value.startsWith('system:'))
+                .toList();
+            return Container(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                MediaQuery.of(dialogCtx).viewInsets.bottom + 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          promptsOnly
+                              ? tr('CONFIGURAR PROMPTS')
+                              : tr('PERSONALIZAR ATAJOS'),
+                          style: AppText.mono(
+                            12,
+                            color: AppColors.bone,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.add, color: AppColors.accent),
+                          tooltip: promptsOnly
+                              ? tr('Añadir prompt')
+                              : tr('AGREGAR ATAJO'),
+                          onPressed: () => _showAddEditShortcutDialog(
+                            dialogCtx,
+                            state,
+                            null,
+                            (newShortcut) {
+                              state.addCustomShortcut(newShortcut);
+                              setSheetState(() {});
+                            },
+                            promptsOnly: promptsOnly,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (!promptsOnly) ...[
+                      Row(
+                        children: [
+                          Text(
+                            tr('ALTO TECLAS'),
+                            style: AppText.mono(9, color: AppColors.muted),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Slider(
+                              value: state.shortcutKeyHeight,
+                              min: 20.0,
+                              max: 45.0,
+                              divisions: 25,
+                              label: '${state.shortcutKeyHeight.round()}px',
+                              activeColor: AppColors.accent,
+                              inactiveColor: AppColors.hairline,
+                              onChanged: (val) {
+                                state.setShortcutKeyHeight(val);
+                                setSheetState(() {});
+                              },
+                            ),
+                          ),
+                          Text(
+                            '${state.shortcutKeyHeight.round()}px',
+                            style: AppText.mono(9, color: AppColors.bone),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Rows, not key width: the grid derives its columns from
+                      // this, so the choice is "how tall may the bar be" and the
+                      // keys are sized to fit whatever that leaves.
+                      Row(
+                        children: [
+                          Text(
+                            tr('FILAS'),
+                            style: AppText.mono(9, color: AppColors.muted),
+                          ),
+                          const SizedBox(width: 12),
+                          for (final n in const [1, 2, 3])
+                            Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: _MiniToggle(
+                                label: '$n',
+                                selected: state.shortcutRows == n,
+                                onTap: () {
+                                  state.setShortcutRows(n);
+                                  setSheetState(() {});
+                                },
+                              ),
+                            ),
+                          const Spacer(),
+                          Text(
+                            state.shortcutRows == 1
+                                ? tr('teclas más pequeñas')
+                                : tr('teclas más grandes'),
+                            style: AppText.mono(8.5, color: AppColors.muted),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _LayersSection(
+                        state: state,
+                        onChanged: () => setSheetState(() {}),
+                      ),
+                    ],
+                    if (promptsOnly)
+                      Text(
+                        tr(
+                          'Nombra cada botón, define el texto o comando y arrastra para ordenar. Salir, Pegar y Enter son fijos.',
+                        ),
+                        style: AppText.body(12, color: AppColors.muted),
+                      ),
+                    const SizedBox(height: 12),
+                    Text(
+                      tr('MIS ATAJOS'),
+                      style: AppText.mono(9, color: AppColors.muted),
+                    ),
+                    const SizedBox(height: 6),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(dialogCtx).size.height * 0.45,
+                      ),
+                      child: entries.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: Text(
+                                  tr('No hay atajos personalizados'),
+                                  style: AppText.body(
+                                    13,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : ReorderableListView.builder(
+                              shrinkWrap: true,
+                              itemCount: entries.length,
+                              buildDefaultDragHandles: false,
+                              // ignore: deprecated_member_use
+                              onReorder: (oldIndex, newIndex) {
+                                if (promptsOnly) {
+                                  if (oldIndex < newIndex) newIndex -= 1;
+                                  final item = entries.removeAt(oldIndex);
+                                  entries.insert(newIndex, item);
+                                  var i = 0;
+                                  state.setCustomShortcuts([
+                                    for (final shortcut
+                                        in state.customShortcuts)
+                                      shortcut.value.startsWith('system:')
+                                          ? shortcut
+                                          : entries[i++],
+                                  ]);
+                                } else {
+                                  state.reorderCustomShortcuts(
+                                    oldIndex,
+                                    newIndex,
+                                  );
+                                }
+                                setSheetState(() {});
+                              },
+                              itemBuilder: (itemCtx, index) {
+                                final shortcut = entries[index];
+                                final storageIndex = state.customShortcuts
+                                    .indexOf(shortcut);
+                                final isSystem = shortcut.value.startsWith(
+                                  'system:',
+                                );
+                                return ListTile(
+                                  // Identity, not position: a key built from the
+                                  // index travels with the slot instead of the
+                                  // row, so after a drag the list shows the item
+                                  // that used to be there.
+                                  key: ObjectKey(shortcut),
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: Checkbox(
+                                    activeColor: AppColors.accent,
+                                    checkColor: AppColors.ink,
+                                    side: BorderSide(color: AppColors.muted),
+                                    value: shortcut.enabled,
+                                    onChanged: (bool? val) {
+                                      final updated = TerminalShortcut(
+                                        label: shortcut.label,
+                                        value: shortcut.value,
+                                        enabled: val ?? true,
+                                      );
+                                      state.updateCustomShortcut(
+                                        storageIndex,
+                                        updated,
+                                      );
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                  title: Text(
+                                    isSystem
+                                        ? tr(shortcut.label)
+                                        : shortcut.label,
+                                    style: AppText.mono(
+                                      12,
+                                      color: AppColors.bone,
+                                      weight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    isSystem
+                                        ? tr('Acción del sistema')
+                                        : shortcut.value,
+                                    style: AppText.mono(
+                                      10,
+                                      color: AppColors.muted,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (!isSystem) ...[
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.edit,
+                                            size: 16,
+                                            color: AppColors.bone,
+                                          ),
+                                          onPressed: () =>
+                                              _showAddEditShortcutDialog(
+                                                dialogCtx,
+                                                state,
+                                                shortcut,
+                                                (updatedShortcut) {
+                                                  state.updateCustomShortcut(
+                                                    storageIndex,
+                                                    updatedShortcut,
+                                                  );
+                                                  setSheetState(() {});
+                                                },
+                                                promptsOnly: promptsOnly,
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.delete_outline,
+                                            size: 16,
+                                            color: Colors.redAccent,
+                                          ),
+                                          onPressed: () {
+                                            state.deleteCustomShortcut(
+                                              storageIndex,
+                                            );
+                                            setSheetState(() {});
+                                          },
+                                        ),
+                                      ],
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Icon(
+                                            Icons.drag_handle,
+                                            color: AppColors.muted,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (!promptsOnly)
+                          GhostButton(
+                            label: tr('Restablecer'),
+                            dense: true,
+                            onPressed: () {
+                              state.setCustomShortcuts(
+                                state.getDefaultShortcuts(),
+                              );
+                              state.setShortcutLayers(
+                                List.of(QuickKeyLayer.values),
+                              );
+                              state.setShortcutRows(1);
+                              setSheetState(() {});
+                            },
+                          ),
+                        const SizedBox(width: 10),
+                        InvertedButton(
+                          label: tr('Cerrar'),
+                          dense: true,
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static void _showAddEditShortcutDialog(
+    BuildContext context,
+    AppState state,
+    TerminalShortcut? existing,
+    void Function(TerminalShortcut shortcut) onSave, {
+    bool promptsOnly = false,
+  }) {
+    final labelController = TextEditingController(text: existing?.label ?? '');
+    final valueController = TextEditingController(text: existing?.value ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          backgroundColor: AppColors.panel,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(4)),
+          ),
+          title: Text(
+            promptsOnly
+                ? (existing == null ? tr('Añadir prompt') : tr('Editar prompt'))
+                : (existing == null ? tr('AGREGAR ATAJO') : tr('EDITAR ATAJO')),
+            style: AppText.mono(
+              11,
+              color: AppColors.bone,
+              weight: FontWeight.w700,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: labelController,
+                  autofocus: true,
+                  enableIMEPersonalizedLearning: true,
+                  decoration: InputDecoration(
+                    labelText: promptsOnly
+                        ? tr('Nombre del botón')
+                        : tr('ETIQUETA (ej: ls, ^C, ~)'),
+                    labelStyle: TextStyle(color: AppColors.muted),
+                  ),
+                  style: AppText.body(13),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: valueController,
+                  minLines: promptsOnly ? 2 : 1,
+                  maxLines: promptsOnly ? 5 : 1,
+                  enableIMEPersonalizedLearning: true,
+                  decoration: InputDecoration(
+                    labelText: promptsOnly
+                        ? tr('Texto o comando a enviar')
+                        : tr('VALOR A ENVIAR (ej: ls\\n, \\x03, ~)'),
+                    helperText: promptsOnly
+                        ? tr(
+                            'Añade \\r al final para ejecutar; sin él solo se inserta.',
+                          )
+                        : null,
+                    labelStyle: TextStyle(color: AppColors.muted),
+                  ),
+                  style: AppText.body(13),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  tr('Atajos rápidos de control:'),
+                  style: AppText.mono(8.5, color: AppColors.muted),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'Tab',
+                      r'\t',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'Esc',
+                      r'\x1b',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'Enter',
+                      r'\n',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'Ctrl+C',
+                      r'\x03',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'Ctrl+D',
+                      r'\x04',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'Ctrl+A',
+                      r'\x01',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'F1',
+                      r'\x1b[11~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'F2',
+                      r'\x1b[12~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'F3',
+                      r'\x1b[13~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'F4',
+                      r'\x1b[14~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      'F5',
+                      r'\x1b[15~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      tr('Re Pág'),
+                      r'\x1b[5~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      tr('Av Pág'),
+                      r'\x1b[6~',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      tr('Inicio'),
+                      r'\x1b[H',
+                      valueController,
+                    ),
+                    _dialogHelperButton(
+                      dialogCtx,
+                      tr('Fin'),
+                      r'\x1b[F',
+                      valueController,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            GhostButton(
+              label: tr('Cancelar'),
+              dense: true,
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+            ),
+            InvertedButton(
+              label: tr('Guardar'),
+              dense: true,
+              onPressed: () {
+                if (labelController.text.trim().isNotEmpty &&
+                    valueController.text.isNotEmpty) {
+                  onSave(
+                    TerminalShortcut(
+                      label: labelController.text,
+                      value: valueController.text,
+                      enabled: existing?.enabled ?? true,
+                    ),
+                  );
+                  Navigator.of(dialogCtx).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static Widget _dialogHelperButton(
+    BuildContext context,
+    String label,
+    String val,
+    TextEditingController controller,
+  ) {
+    return InkWell(
+      onTap: () {
+        controller.text = val;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.hairline, width: 1),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Text(label, style: AppText.mono(8.5, color: AppColors.bone)),
+      ),
+    );
+  }
+}
+
+/// Small square toggle used for the row-count picker.
+class _MiniToggle extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MiniToggle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 26,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.bone : Colors.transparent,
+          border: Border.all(
+            color: selected ? Colors.transparent : AppColors.hairline,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppText.mono(
+            11,
+            color: selected ? AppColors.ink : AppColors.bone,
+            weight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Which layer tabs the keyboard shows, and in what order.
+///
+/// Collapsed by default: it is a setup-once control, and the sheet's main job
+/// is still editing the user's own shortcuts.
+class _LayersSection extends StatelessWidget {
+  final AppState state;
+  final VoidCallback onChanged;
+
+  const _LayersSection({required this.state, required this.onChanged});
+
+  /// Short "what's in it" line, so hiding a layer is an informed choice.
+  String _hint(QuickKeyLayer layer) {
+    switch (layer) {
+      case QuickKeyLayer.control:
+        return tr('Códigos de control (^A, ^R, ^Z…)');
+      case QuickKeyLayer.nav:
+        return tr('Flechas, Inicio/Fin, páginas, Supr');
+      case QuickKeyLayer.fn:
+        return tr('Teclas F1 – F12');
+      case QuickKeyLayer.actions:
+        return tr('Adjuntar, prompts, commit, enlaces');
+      case QuickKeyLayer.mine:
+        return tr('Tus atajos personalizados');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = state.shortcutLayers;
+    // Hidden layers are listed after the visible ones so the order shown here
+    // matches the tab strip exactly for everything that is on screen.
+    final hidden = QuickKeyLayer.values.where((l) => !visible.contains(l));
+    final ordered = [...visible, ...hidden];
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        iconColor: AppColors.bone,
+        collapsedIconColor: AppColors.muted,
+        title: Text(
+          tr('CAPAS DEL TECLADO'),
+          style: AppText.mono(9, color: AppColors.muted),
+        ),
+        subtitle: Text(
+          visible.map((l) => tr(l.label)).join(' · '),
+          style: AppText.mono(9, color: AppColors.bone),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        children: [
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: ordered.length,
+            // ignore: deprecated_member_use
+            onReorder: (oldIndex, newIndex) {
+              if (oldIndex < newIndex) newIndex -= 1;
+              final next = List.of(ordered);
+              final moved = next.removeAt(oldIndex);
+              next.insert(newIndex, moved);
+              // Dragging a hidden layer into the list is also how you show it:
+              // the new order defines what is visible, minus what is still
+              // unchecked below.
+              state.setShortcutLayers(next.where(visible.contains).toList());
+              onChanged();
+            },
+            itemBuilder: (ctx, i) {
+              final layer = ordered[i];
+              final on = visible.contains(layer);
+              return Row(
+                key: ValueKey(layer),
+                children: [
+                  Checkbox(
+                    activeColor: AppColors.accent,
+                    checkColor: AppColors.ink,
+                    side: BorderSide(color: AppColors.muted),
+                    value: on,
+                    onChanged: (val) {
+                      state.toggleShortcutLayer(layer, val ?? false);
+                      onChanged();
+                    },
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr(layer.label),
+                          style: AppText.mono(
+                            11,
+                            color: on ? AppColors.bone : AppColors.muted,
+                            weight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _hint(layer),
+                          style: AppText.mono(8.5, color: AppColors.muted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  ReorderableDragStartListener(
+                    index: i,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(
+                        Icons.drag_handle,
+                        size: 18,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
